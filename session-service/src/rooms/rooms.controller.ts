@@ -10,6 +10,17 @@ export class RoomsController {
     return this.roomsService.findByBooking(bookingId);
   }
 
+  // Comunicación síncrona entrante: content-service resuelve session_id ->
+  // booking_id (sección 5.7 del documento) para saber quién es el
+  // estudiante/tutor inscrito a esa sesión antes de aceptar un archivo o
+  // autorizar su descarga. Mismo criterio "sin guard" que el resto de los
+  // endpoints de este controlador (llamadas servidor-a-servidor, igual que
+  // UserServiceClient/CatalogServiceClient en los demás microservicios).
+  @Get(":id")
+  findOne(@Param("id") id: string) {
+    return this.roomsService.findOne(id);
+  }
+
   @Get(":id/token")
   getToken(@Param("id") id: string) {
     return this.roomsService.getToken(id);
