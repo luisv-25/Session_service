@@ -31,6 +31,13 @@ export class Room {
   @Column({ type: "enum", enum: RoomStatus, default: RoomStatus.READY })
   status: RoomStatus;
 
+    // Duración de la sesión en minutos, calculada en RoomsService.end() como
+  // el tiempo entre la creación de la sala y el cierre de la llamada. Es
+  // una aproximación (ver LEEME de analytics-service): Daily.co en el plan
+  // gratuito no expone el inicio real de la llamada por su API REST.
+  @Column({ type: "int", nullable: true })
+  duration_minutes: number | null;
+
   @CreateDateColumn()
   created_at: Date;
 }
