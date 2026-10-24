@@ -10,10 +10,13 @@ import { Room } from "../rooms/entities/room.entity";
 export class EventsPublisher implements OnModuleInit {
   private readonly logger = new Logger(EventsPublisher.name);
 
-  constructor(@Inject("SESSION_EVENTS_CLIENT") private readonly client: ClientProxy) {}
+  constructor(@Inject("SESSION_EVENTS_CLIENT") private readonly client: ClientProxy, 
+              @Inject("ANALYTICS_EVENTS_CLIENT") private readonly analyticsClient: ClientProxy,
+             ) {}
 
   async onModuleInit() {
     await this.client.connect();
+    await this.analyticsClient.connect();
   }
 
   publishSessionRoomReady(room: Room) {
@@ -26,11 +29,16 @@ export class EventsPublisher implements OnModuleInit {
   }
 
   publishSessionCompleted(room: Room) {
-    this.logger.log(`Publicando session.completed para room ${room.id}`);
-    return this.client.emit("session.completed", {
-      eventName: "session.completed",
-      occurredAt: new Date().toISOString(),
-      data: { roomId: room.id, bookingId: room.booking_id },
-    });
-  }
+  this.logger.log(`Publicando session.completed para room ${room.id}`);
+  const payload = {
+    eventName: "session.completed",
+    occurredAt: new Date().toISOString(),
+    data: {
+      roomId: room.id,
+      bookingId: room.booking_id,
+      durationMinutes: room.duration_minutes,
+    },
+  };
+  this.client.emit("session.completed", payload);
+  return this.analyticsClient.emit("session.completed", payload);
 }
