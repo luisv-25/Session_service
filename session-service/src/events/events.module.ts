@@ -17,6 +17,15 @@ import { RoomsModule } from "../rooms/rooms.module";
           queueOptions: { durable: true },
         },
       },
+      {
+        name: "ANALYTICS_EVENTS_CLIENT",
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL || "amqp://guest:guest@localhost:5672"],
+          queue: "session_analytics_queue",
+          queueOptions: { durable: true },
+        },
+      },
     ]),
   ],
   providers: [EventsPublisher],
