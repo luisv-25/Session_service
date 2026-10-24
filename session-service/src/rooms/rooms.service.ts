@@ -75,18 +75,18 @@ export class RoomsService {
     };
   }
 
-  async end(id: string) {
+    async end(id: string) {
     const room = await this.findOne(id);
     room.status = RoomStatus.ENDED;
+    room.duration_minutes = Math.round(
+      (Date.now() - room.created_at.getTime()) / 60000,
+    );
     await this.roomsRepo.save(room);
     await this.logEvent(room.id, "session_ended");
-    // Libera el cupo de salas del plan gratuito de Daily (máx. 50
-    // creadas-y-no-borradas simultáneas) — ver nota en daily.client.ts.
     await this.dailyClient.deleteRoom(room.provider_room_id);
     this.eventsPublisher.publishSessionCompleted(room);
     return room;
   }
-
   listLogs(roomId: string) {
     return this.sessionLogsRepo.find({ where: { room_id: roomId }, order: { timestamp: "ASC" } });
   }
