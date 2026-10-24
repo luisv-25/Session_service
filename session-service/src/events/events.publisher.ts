@@ -41,4 +41,4 @@ export class EventsPublisher implements OnModuleInit {
   };
   this.client.emit("session.completed", payload);
   return this.analyticsClient.emit("session.completed", payload);
-}
+  }
