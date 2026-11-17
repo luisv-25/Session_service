@@ -47,6 +47,42 @@ export class RoomsService {
     return room;
   }
 
+  
+  async cancelForBooking(bookingId: string) {
+    const room = await this.roomsRepo.findOne({
+      where: { booking_id: bookingId },
+    });
+  
+    // La reserva pudo cancelarse antes de crear una sala.
+    if (!room) {
+      this.logger.log(
+        `Reserva ${bookingId} cancelada sin sala asociada`,
+      );
+      return;
+    }
+  
+    // Evita intentar cerrar dos veces una sala finalizada.
+    if (room.status === RoomStatus.ENDED) {
+      this.logger.log(
+        `La sala ${room.id} ya estaba finalizada`,
+      );
+      return;
+    }
+  
+    // Primero cerramos la sala real en Daily.co.
+    await this.dailyClient.deleteRoom(room.provider_room_id);
+  
+    room.status = RoomStatus.ENDED;
+    await this.roomsRepo.save(room);
+  
+    await this.logEvent(room.id, "booking_cancelled");
+  
+    this.logger.log(
+      `Sala ${room.id} cerrada por cancelación de reserva ${bookingId}`,
+    );
+  }
+
+
   async findByBooking(bookingId: string) {
     const room = await this.roomsRepo.findOne({ where: { booking_id: bookingId } });
     if (!room) throw new NotFoundException(`No hay sala para la reserva ${bookingId}`);
