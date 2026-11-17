@@ -28,6 +28,28 @@ export class EventsPublisher implements OnModuleInit {
     });
   }
 
+  publishSessionQosDegraded(
+    roomId: string,
+    bookingId: string,
+    jitterMs: number | null,
+    packetLossPct: number | null,
+    ) {
+      this.logger.warn(
+        `Publicando session.qos.degraded para room ${roomId}`,
+      );
+    
+      return this.client.emit("session.qos.degraded", {
+        eventName: "session.qos.degraded",
+        occurredAt: new Date().toISOString(),
+        data: {
+          roomId,
+          bookingId,
+          jitterMs,
+          packetLossPct,
+        },
+      });
+    }
+
   publishSessionCompleted(room: Room) {
   this.logger.log(`Publicando session.completed para room ${room.id}`);
   const payload = {
