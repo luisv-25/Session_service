@@ -96,14 +96,48 @@ export class RoomsService {
   // "network-quality-change" en el navegador). Este endpoint queda listo
   // para que el frontend envíe lo que el propio navegador mida
   // (navigator.connection) — ver nota en qos-metric.entity.ts.
-  recordQosSample(roomId: string, data: { jitterMs?: number; packetLossPct?: number }) {
-    return this.qosMetricsRepo.save(
+    async recordQosSample(
+    roomId: string,
+    data: { jitterMs?: number; packetLossPct?: number },
+  ) {
+    const room = await this.findOne(roomId);
+  
+    const sample = await this.qosMetricsRepo.save(
       this.qosMetricsRepo.create({
         room_id: roomId,
         jitter_ms: data.jitterMs ?? null,
         packet_loss_pct: data.packetLossPct ?? null,
       }),
     );
+  
+    // Umbrales iniciales configurables para detectar mala calidad.
+    const jitterThreshold = Number(
+      process.env.QOS_JITTER_THRESHOLD_MS ?? 50,
+    );
+    const packetLossThreshold = Number(
+      process.env.QOS_PACKET_LOSS_THRESHOLD_PCT ?? 5,
+    );
+  
+    const degraded =
+      (data.jitterMs !== undefined &&
+        data.jitterMs > jitterThreshold) ||
+      (data.packetLossPct !== undefined &&
+        data.packetLossPct > packetLossThreshold);
+  
+    if (degraded) {
+      this.logger.warn(
+        `Calidad degradada en sala ${roomId}: jitter=${data.jitterMs ?? "N/A"}ms, pérdida=${data.packetLossPct ?? "N/A"}%`,
+      );
+  
+      this.eventsPublisher.publishSessionQosDegraded(
+        room.id,
+        room.booking_id,
+        data.jitterMs ?? null,
+        data.packetLossPct ?? null,
+      );
+    }
+  
+    return sample;
   }
 
   listQos(roomId: string) {
